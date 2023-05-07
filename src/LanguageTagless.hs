@@ -40,6 +40,8 @@ class IOSYM repr where
 class ControlFlowSYM repr where
   if' :: repr Bool -> repr a -> repr a -> repr a
   for' :: repr Int -> repr Int -> repr (IO ()) -> repr (IO ())
+  lambda' :: (repr a -> repr b) -> repr (a -> b)
+  apply' :: repr (a -> b) -> repr a -> repr b
 
 newtype Interpreter a = Interpreter {runExp :: a}
 
@@ -71,6 +73,8 @@ instance ControlFlowSYM Interpreter where
     | otherwise = Interpreter $ do
         runExp action
         runExp $ for' (Interpreter (start + 1)) (Interpreter stop) action
+  lambda' fn = Interpreter $ runExp . fn . Interpreter
+  apply' (Interpreter fn) (Interpreter a) = Interpreter $ fn a
 
 eval :: Interpreter a -> a
 eval = runExp
